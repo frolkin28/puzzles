@@ -1,0 +1,21 @@
+[project]
+name = "puzzles"
+version = "0.1.0"
+description = "Puzzles rent service"
+authors = [
+    {name = "frolkin28", email = "frolkin2801@gmail.com"},
+    {name = "carolinepi", email = ""},
+]
+dependencies = [
+    "Django>=5.0.7",
+]
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true

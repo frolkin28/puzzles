@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  base-dev: &base-dev
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: dev
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - ./puzzles:/app/puzzles
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./pdm.lock:/app/pdm.lock
+
+  backend:
+    <<: *base-dev
+    restart: unless-stopped
+    command:
+      [
+        "python",
+        "/app/puzzles/manage.py",
+        "runserver",
+        "0.0.0.0:8080",
+      ]
+    ports:
+      - "8080:8080"
+
+  backend-shell:
+    <<: *base-dev
+    restart: unless-stopped
+    command: bash
