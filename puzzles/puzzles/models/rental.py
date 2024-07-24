@@ -6,6 +6,17 @@ from puzzles.puzzles.models.puzzle import Puzzle
 from puzzles.puzzles.models.user import User
 
 
+class DeliveryType(IntEnum):
+    NP = 1
+    UP = 2
+    PICKUP = 3
+    COURIER = 4
+
+    @classmethod
+    def choices(cls) -> list[tuple[int, str]]:
+        return [(key.value, key.name.capitalize()) for key in cls]
+
+
 class RentalStatus(IntEnum):
     RESERVED = 1
     ACTIVE = 2
@@ -22,18 +33,23 @@ class Rental(models.Model):
         User, on_delete=models.CASCADE,
         related_name='rentals'
     )
-    puzzle = models.ForeignKey(
-        Puzzle, on_delete=models.CASCADE,
-        related_name='rentals'
-    )
     status = models.IntegerField(
         choices=RentalStatus.choices(),
         default=RentalStatus.RESERVED.value
     )
+    total_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    total_deposit = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
     rented_at = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateField()
-    returned = models.BooleanField(default=False)
+    rented_due_date = models.DateField()
     returned_at = models.DateTimeField(blank=True, null=True)
+    delivery_type = models.IntegerField(
+        choices=DeliveryType.choices(),
+    )
+    address = models.TextField(blank=True, null=True)
 
     def is_reserved(self) -> bool:
         return self.status == RentalStatus.RESERVED

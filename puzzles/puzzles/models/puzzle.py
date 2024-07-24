@@ -1,17 +1,27 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.urls import reverse
 
 
-class DeliveryType(IntEnum):
-    NP = 1
-    UP = 2
-    PICKUP = 3
-    COURIER = 4
+class PuzzleStatus(IntEnum):
+    ACTIVE = 1
+    INACTIVE = 2
 
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
+        return [(key.value, key.name.capitalize()) for key in cls]
+
+
+class PuzzleCondition(Enum):
+    NEW = 'Новий'
+    IDEAL = 'Ідеальний'
+    VERY_GOOD = 'Дуже хороший'
+    GOOD = 'Хороший'
+    ALRIGHT = 'Задовільний'
+
+    @classmethod
+    def choices(cls) -> list[tuple[str, str]]:
         return [(key.value, key.name.capitalize()) for key in cls]
 
 
@@ -19,15 +29,26 @@ class Puzzle(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     pieces = models.IntegerField()
-    # image = models.ImageField(upload_to='puzzles/')
-    created_at = models.DateTimeField(auto_now_add=True)
-    delivery_type = models.IntegerField(
-        choices=DeliveryType.choices(),
+    status = models.IntegerField(
+        choices=PuzzleStatus.choices(),
+        default=PuzzleStatus.ACTIVE.value
     )
-    tags = models.CharField(max_length=100, blank=True)
-
-    def get_absolute_url(self):
-        return reverse('puzzles:detail', kwargs={'id': self.pk})
+    image_urls = ArrayField(
+        models.URLField(max_length=1024), blank=True, default=list
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    deposit = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    attributes = models.ManyToManyField(
+        'Attribute', through='PuzzleAttribute', related_name='puzzles'
+    )
+    condition = models.CharField(
+        choices=PuzzleCondition.choices(),
+    )
 
     def average_rating(self) -> float | None:
         reviews = self.reviews.all()

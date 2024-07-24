@@ -11,7 +11,7 @@ class Review(models.Model):
     puzzle = models.ForeignKey(
         Puzzle, on_delete=models.CASCADE, related_name='reviews'
     )
-    quality = models.PositiveIntegerField()
+    condition = models.PositiveIntegerField()
     rating = models.PositiveIntegerField()
     difficulty = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
