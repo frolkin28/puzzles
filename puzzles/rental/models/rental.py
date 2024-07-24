@@ -2,8 +2,7 @@ from django.db import models
 from django.utils import timezone
 from enum import IntEnum
 
-from puzzles.puzzles.models.puzzle import Puzzle
-from puzzles.puzzles.models.user import User
+from puzzles.account.models.user import User
 
 
 class DeliveryType(IntEnum):

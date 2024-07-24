@@ -18,6 +18,7 @@ WORKDIR /app
 
 COPY pyproject.toml .
 COPY pdm.lock .
+COPY manage.py .
 RUN pdm install --no-lock --no-editable --prod
 
 

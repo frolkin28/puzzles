@@ -20,14 +20,37 @@ services:
     command:
       [
         "python",
-        "/app/puzzles/manage.py",
+        "/app/manage.py",
         "runserver",
         "0.0.0.0:8080",
       ]
     ports:
       - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - app_network
 
   backend-shell:
     <<: *base-dev
     restart: unless-stopped
     command: bash
+
+  db:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: puzzle_db
+      POSTGRES_USER: puzzle_user
+      POSTGRES_PASSWORD: puzzle_pass
+    networks:
+      - app_network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  pgdata:

@@ -1,7 +1,7 @@
 from django.db import models
 
-from puzzles.puzzles.models.puzzle import Puzzle
-from puzzles.puzzles.models.user import User
+from puzzles.catalog.models.puzzle import Puzzle
+from puzzles.account.models.user import User
 
 
 class Review(models.Model):

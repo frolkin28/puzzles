@@ -1,8 +1,8 @@
-from enum import IntEnum, Enum
-
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-
+from puzzles.catalog.models.attribute import Attribute
+from puzzles.catalog.models.puzzle_attribute import PuzzleAttribute
+from enum import IntEnum, Enum
 
 class PuzzleStatus(IntEnum):
     ACTIVE = 1
@@ -11,7 +11,6 @@ class PuzzleStatus(IntEnum):
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
         return [(key.value, key.name.capitalize()) for key in cls]
-
 
 class PuzzleCondition(Enum):
     NEW = 'Новий'
@@ -23,7 +22,6 @@ class PuzzleCondition(Enum):
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
         return [(key.value, key.name.capitalize()) for key in cls]
-
 
 class Puzzle(models.Model):
     title = models.CharField(max_length=255)
@@ -44,7 +42,7 @@ class Puzzle(models.Model):
         max_digits=10, decimal_places=2, default=0.00
     )
     attributes = models.ManyToManyField(
-        'Attribute', through='PuzzleAttribute', related_name='puzzles'
+        'Attribute', through='PuzzleAttribute'
     )
     condition = models.CharField(
         choices=PuzzleCondition.choices(),
@@ -59,8 +57,7 @@ class Puzzle(models.Model):
     def average_difficulty(self) -> float | None:
         reviews = self.reviews.all()
         if reviews.exists():
-            return reviews.aggregate(models.Avg('difficulty'))[
-                'difficulty__avg']
+            return reviews.aggregate(models.Avg('difficulty'))['difficulty__avg']
         return None
 
     def __str__(self) -> str:

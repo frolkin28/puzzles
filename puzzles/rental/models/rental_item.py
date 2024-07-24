@@ -1,7 +1,7 @@
 from django.db import models
 
-from puzzles.puzzles.models.puzzle import Puzzle
-from puzzles.puzzles.models.rental import Rental
+from puzzles.catalog.models.puzzle import Puzzle
+from puzzles.rental.models.rental import Rental
 
 
 class RentalItem(models.Model):

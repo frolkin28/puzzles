@@ -4,10 +4,13 @@ version = "0.1.0"
 description = "Puzzles rent service"
 authors = [
     {name = "frolkin28", email = "frolkin2801@gmail.com"},
-    {name = "carolinepi", email = ""},
+    {name = "carolinepi", email = "sams051834@gmail.com"},
 ]
 dependencies = [
     "Django>=5.0.7",
+    "graphene-django>=3.2.2",
+    "strawberry-graphql>=0.236.2",
+    "psycopg2-binary>=2.9.9",
 ]
 requires-python = ">=3.12"
 license = {text = "MIT"}
