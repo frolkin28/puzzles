@@ -28,9 +28,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
-    networks:
-      - app_network
-
+  
   backend-shell:
     <<: *base-dev
     restart: unless-stopped
@@ -43,14 +41,8 @@ services:
       POSTGRES_DB: puzzle_db
       POSTGRES_USER: puzzle_user
       POSTGRES_PASSWORD: puzzle_pass
-    networks:
-      - app_network
     volumes:
       - pgdata:/var/lib/postgresql/data
-
-networks:
-  app_network:
-    driver: bridge
 
 volumes:
   pgdata:
