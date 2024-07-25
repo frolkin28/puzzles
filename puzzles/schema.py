@@ -1,5 +1,6 @@
 import strawberry
 from strawberry.extensions import QueryDepthLimiter
+
 from puzzles.catalog.graph.query import CatalogQuery
 
 MAX_DEPTH = 10
@@ -7,7 +8,7 @@ MAX_DEPTH = 10
 
 @strawberry.type
 class Query:
-    catalog: CatalogQuery
+    catalog: CatalogQuery = strawberry.field(resolver=lambda: CatalogQuery())
 
 
 schema = strawberry.Schema(

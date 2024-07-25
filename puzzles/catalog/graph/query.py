@@ -23,7 +23,3 @@ class CatalogQuery:
                 attributes=[attr.name for attr in puzzle.attributes.all()]
             ) for puzzle in puzzles
         ]
-
-    @strawberry.field(description="Test field")
-    def test(self) -> str:
-        return "Test success"
