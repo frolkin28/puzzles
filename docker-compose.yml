@@ -13,6 +13,7 @@ services:
       - ./puzzles:/app/puzzles
       - ./pyproject.toml:/app/pyproject.toml
       - ./pdm.lock:/app/pdm.lock
+      - ./manage.py:/app/manage.py
 
   backend:
     <<: *base-dev
@@ -20,15 +21,20 @@ services:
     command:
       [
         "python",
-        "/app/manage.py",
-        "runserver",
-        "0.0.0.0:8080",
+        "-m",
+        "uvicorn",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080",
+        "--reload",
+        "puzzles.asgi:application"
       ]
     ports:
       - "8080:8080"
     depends_on:
       - db
-  
+
   backend-shell:
     <<: *base-dev
     restart: unless-stopped
