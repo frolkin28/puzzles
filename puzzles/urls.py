@@ -14,13 +14,22 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path
 from strawberry.django.views import GraphQLView
+from django.conf import settings
+from django.conf.urls.static import static
 
-from .schema import schema
+from puzzles.schema import schema
+from puzzles.account import views as account_views
+
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('graphql/', GraphQLView.as_view(schema=schema, graphiql=True)),
+    path("admin/", admin.site.urls),
+    path("graphql/", GraphQLView.as_view(schema=schema, graphiql=True)),
+    path("api/v1/register", account_views.register_view),
+    path("api/v1/login", account_views.login_view),
+    path("api/v1/logout", account_views.logout_view),
+    *static(settings.STATIC_URL, document_root=settings.STATIC_ROOT),
 ]
