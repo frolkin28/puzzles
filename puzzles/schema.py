@@ -2,6 +2,7 @@ import strawberry
 from strawberry.extensions import QueryDepthLimiter
 
 from puzzles.catalog.graph.query import CatalogQuery
+from puzzles.rental.graph.mutation import RentalMutation
 
 MAX_DEPTH = 10
 
@@ -11,8 +12,14 @@ class Query:
     catalog: CatalogQuery = strawberry.field(resolver=lambda: CatalogQuery())
 
 
+@strawberry.type
+class Mutation:
+    catalog: RentalMutation = strawberry.field(resolver=lambda: RentalMutation())
+
+
 schema = strawberry.Schema(
     query=Query,
+    mutation=Mutation,
     extensions=[
         QueryDepthLimiter(
             max_depth=MAX_DEPTH,
