@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
@@ -10,20 +12,23 @@ from puzzles.account.schemas import RegisterModel
 
 
 class EmailBackend(ModelBackend):
-    def authenticate(self, request: HttpRequest, email=None, password=None, **kwargs):
+    def authenticate(
+        self,
+        _: HttpRequest,
+        email: str | None = None,
+        password: str | None = None,
+        **kwargs: Any,
+    ) -> User | None:
         UserModel = get_user_model()
-        print("Auth backend", email)
         try:
             user = UserModel.objects.get(email=email)
-        except UserModel.DoesNotExist as e:
-            print(e)
+        except UserModel.DoesNotExist:
             return None
         else:
             if user.check_password(password):
-                print("check_password")
                 return user
 
-    def get_user(self, user_id):
+    def get_user(self, user_id: int) -> User | None:
         UserModel = get_user_model()
         try:
             return UserModel.objects.get(pk=user_id)
