@@ -1,8 +1,9 @@
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField, SearchVector
 from django.db import models
-from puzzles.catalog.models.attribute import Attribute
-from puzzles.catalog.models.puzzle_attribute import PuzzleAttribute
 from enum import IntEnum, Enum
+
 
 class PuzzleStatus(IntEnum):
     ACTIVE = 1
@@ -11,6 +12,7 @@ class PuzzleStatus(IntEnum):
     @classmethod
     def choices(cls) -> list[tuple[int, str]]:
         return [(key.value, key.name.capitalize()) for key in cls]
+
 
 class PuzzleCondition(Enum):
     NEW = 'Новий'
@@ -22,6 +24,7 @@ class PuzzleCondition(Enum):
     @classmethod
     def choices(cls) -> list[tuple[str, str]]:
         return [(key.value, key.name.capitalize()) for key in cls]
+
 
 class Puzzle(models.Model):
     title = models.CharField(max_length=255)
@@ -47,6 +50,10 @@ class Puzzle(models.Model):
     condition = models.CharField(
         choices=PuzzleCondition.choices(),
     )
+    search_vector = SearchVectorField(null=True)
+
+    class Meta:
+        indexes = [GinIndex(fields=['search_vector'])]
 
     def average_rating(self) -> float | None:
         reviews = self.reviews.all()
@@ -59,6 +66,22 @@ class Puzzle(models.Model):
         if reviews.exists():
             return reviews.aggregate(models.Avg('difficulty'))['difficulty__avg']
         return None
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.pk:
+            update_fields = kwargs.get('update_fields', [])
+            if (
+                'title' in update_fields or
+                'description' in update_fields or
+                not update_fields
+            ):
+                self.search_vector = (
+                    SearchVector('title', weight='A') +
+                    SearchVector('description', weight='B')
+                )
+                super().save(update_fields=['search_vector'])
 
     def __str__(self) -> str:
         return str(self.title)

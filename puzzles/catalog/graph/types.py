@@ -1,22 +1,44 @@
 import strawberry
+from enum import Enum
 
 from puzzles.catalog.models.attribute import Attribute
-from puzzles.catalog.models.puzzle import Puzzle
+from puzzles.catalog.models.puzzle import Puzzle, PuzzleCondition
+
+
+@strawberry.enum
+class GraphQLEnumPuzzleCondition(Enum):
+    NEW = PuzzleCondition.NEW.value
+    IDEAL = PuzzleCondition.IDEAL.value
+    VERY_GOOD = PuzzleCondition.VERY_GOOD.value
+    GOOD = PuzzleCondition.GOOD.value
+    ALRIGHT = PuzzleCondition.ALRIGHT.value
 
 
 @strawberry.type(description="Type represents a puzzle.")
 class PuzzleType:
     id: int = strawberry.field(description="The internal puzzle id.")
     title: str = strawberry.field(description="Title of the puzzle.")
-    description: str = strawberry.field(description="Description of the puzzle.")
-    pieces: int = strawberry.field(description="Number of pieces in the puzzle.")
+    description: str = strawberry.field(
+        description="Description of the puzzle."
+    )
+    pieces: int = strawberry.field(
+        description="Number of pieces in the puzzle."
+    )
     status: int = strawberry.field(description="Status of the puzzle.")
-    image_urls: list[str] = strawberry.field(description="URLs of puzzle images.")
-    created_at: str = strawberry.field(description="Creation date of the puzzle.")
+    image_urls: list[str] = strawberry.field(
+        description="URLs of puzzle images."
+    )
+    created_at: str = strawberry.field(
+        description="Creation date of the puzzle."
+    )
     price: float = strawberry.field(description="Price of the puzzle.")
     deposit: float = strawberry.field(description="Deposit for the puzzle.")
-    condition: str = strawberry.field(description="Condition of the puzzle.")
-    attributes: list['AttributeType'] = strawberry.field(description="Attributes associated with the puzzle.")
+    condition: GraphQLEnumPuzzleCondition = strawberry.field(
+        description="Condition of the puzzle."
+    )
+    attributes: list['AttributeType'] = strawberry.field(
+        description="Attributes associated with the puzzle."
+    )
 
     @staticmethod
     def from_model(model: Puzzle) -> "PuzzleType":
