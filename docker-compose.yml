@@ -14,6 +14,7 @@ services:
       - ./pyproject.toml:/app/pyproject.toml
       - ./pdm.lock:/app/pdm.lock
       - ./manage.py:/app/manage.py
+      - ./staticfiles:/app/staticfiles
 
   backend:
     <<: *base-dev

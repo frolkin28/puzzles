@@ -12,12 +12,15 @@ from puzzles.account.schemas import RegisterModel
 class EmailBackend(ModelBackend):
     def authenticate(self, request: HttpRequest, email=None, password=None, **kwargs):
         UserModel = get_user_model()
+        print("Auth backend", email)
         try:
             user = UserModel.objects.get(email=email)
-        except UserModel.DoesNotExist:
+        except UserModel.DoesNotExist as e:
+            print(e)
             return None
         else:
             if user.check_password(password):
+                print("check_password")
                 return user
 
     def get_user(self, user_id):

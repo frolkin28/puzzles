@@ -35,9 +35,9 @@ class CustomUserAdmin(UserAdmin):
         ),
         (
             "Important dates",
-            {"fields": ("last_login", "date_joined", "subscription_expiration")},
+            {"fields": ("last_login", "date_joined")},
         ),
-        ("Subscription", {"fields": ("is_subscriber",)}),
+        ("Subscription", {"fields": ("is_subscriber", "subscription_expiration")}),
     )
     add_fieldsets = (
         (
