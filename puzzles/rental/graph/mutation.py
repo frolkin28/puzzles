@@ -1,26 +1,39 @@
 import strawberry
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import transaction
 
-from puzzles.account.models.user import User
 from puzzles.catalog.models.puzzle import Puzzle
-from puzzles.rental.graph.types import RentalType, CreateRentalInput, \
-    CreateRentalOutput, RentalItemTypeOutput
-from puzzles.rental.models.rental import Rental
+from puzzles.rental.graph.types import (
+    RentalType, GraphQLEnumDeliveryType, RentalItemType
+)
+from puzzles.rental.models.rental import Rental, DeliveryType
 from puzzles.rental.models.rental_item import RentalItem
 
 
 @strawberry.type
 class RentalMutation:
     @strawberry.mutation
-    def create_rental(self, input: CreateRentalInput) -> CreateRentalOutput:
+    def create_rental(
+        self,
+        delivery_type: GraphQLEnumDeliveryType,
+        address: str,
+        puzzle_ids: list[int],
+        info
+    ) -> RentalType:
         with transaction.atomic():
-            user = User.objects.get(pk=input.user_id)
+
+            user = info.context.request.user
+            if not user.is_authenticated:
+                raise Exception("User not authenticated")
+
+            rented_due_date = datetime.now().date() + timedelta(days=30)
+            delivery_type = DeliveryType(delivery_type.value)
+
             rental = Rental.objects.create(
                 user=user,
-                rented_due_date=datetime.strptime(input.rented_due_date, '%Y-%m-%d').date(),
-                delivery_type=input.delivery_type,
-                address=input.address
+                rented_due_date=rented_due_date,
+                delivery_type=delivery_type,
+                address=address
             )
 
             total_price = 0
@@ -28,19 +41,19 @@ class RentalMutation:
 
             rental_items_output = []
 
-            for item in input.items:
-                puzzle = Puzzle.objects.get(pk=item.puzzle_id)
+            for puzzle_id in puzzle_ids:
+                puzzle = Puzzle.objects.get(pk=puzzle_id)
                 rental_item = RentalItem.objects.create(
                     rental=rental,
                     puzzle=puzzle,
-                    price=item.price,
-                    deposit=item.deposit,
+                    price=puzzle.price,
+                    deposit=puzzle.deposit,
                     verification_photo=""
                 )
-                total_price += item.price
-                total_deposit += item.deposit
+                total_price += puzzle.price
+                total_deposit += puzzle.deposit
 
-                rental_items_output.append(RentalItemTypeOutput(
+                rental_items_output.append(RentalItemType(
                     id=rental_item.id,
                     rental_id=rental_item.rental.id,
                     puzzle_id=rental_item.puzzle.id,
@@ -53,7 +66,7 @@ class RentalMutation:
             rental.total_deposit = total_deposit
             rental.save()
 
-        rental_output = RentalType(
+        return RentalType(
             id=rental.id,
             status=rental.status,
             total_price=rental.total_price,
@@ -65,11 +78,7 @@ class RentalMutation:
                 if rental.returned_at
                 else None
             ),
-            delivery_type=rental.delivery_type,
-            address=rental.address
-        )
-
-        return CreateRentalOutput(
-            rental=rental_output,
+            delivery_type=delivery_type,
+            address=rental.address,
             items=rental_items_output
         )

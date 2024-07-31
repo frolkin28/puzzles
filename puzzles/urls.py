@@ -15,6 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from strawberry.django.views import GraphQLView
@@ -33,3 +35,6 @@ urlpatterns = [
     path("api/v1/logout", account_views.logout_view),
     *static(settings.STATIC_URL, document_root=settings.STATIC_ROOT),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

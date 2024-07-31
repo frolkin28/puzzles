@@ -1,16 +1,15 @@
 import strawberry
-
-from django.contrib.postgres.search import SearchQuery, SearchRank
-from puzzles.catalog.models.puzzle import PuzzleStatus
 from typing import Optional
+from django.contrib.postgres.search import SearchQuery, SearchRank
 
-from .types import PuzzleType, GraphQLEnumPuzzleCondition
+from puzzles.catalog.models.puzzle import PuzzleStatus
 from puzzles.catalog.models.puzzle import Puzzle
+from .types import PuzzleType, GraphQLEnumPuzzleCondition
 
 
 @strawberry.type
 class CatalogQuery:
-    @strawberry.field(description="Get all puzzles with optional filters")
+    @strawberry.field(description="Get puzzles with optional filters")
     def all_puzzles(
         self,
         price_from: Optional[float] = None,

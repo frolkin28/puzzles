@@ -1,12 +1,26 @@
 import strawberry
+from enum import Enum
 from typing import List
+
+from puzzles.rental.models.rental import DeliveryType
+
+
+@strawberry.enum
+class GraphQLEnumDeliveryType(Enum):
+    NP = DeliveryType.NP.value
+    UP = DeliveryType.UP.value
+    PICKUP = DeliveryType.PICKUP.value
+    COURIER = DeliveryType.COURIER.value
 
 
 @strawberry.type
 class RentalItemType:
+    id: int
+    rental_id: int
     puzzle_id: int
     price: float
     deposit: float
+    verification_photo: str
 
 
 @strawberry.type
@@ -17,38 +31,7 @@ class RentalType:
     total_deposit: float
     rented_at: str
     rented_due_date: str
-    returned_at: str
-    delivery_type: int
+    returned_at: str | None
+    delivery_type: GraphQLEnumDeliveryType
     address: str
-
-
-@strawberry.input
-class RentalItemInput:
-    puzzle_id: int
-    price: float
-    deposit: float
-
-
-@strawberry.input
-class CreateRentalInput:
-    user_id: int
-    rented_due_date: str
-    delivery_type: int
-    address: str
-    items: List[RentalItemInput]
-
-
-@strawberry.type
-class RentalItemTypeOutput:
-    id: int
-    rental_id: int
-    puzzle_id: int
-    price: float
-    deposit: float
-    verification_photo: str
-
-
-@strawberry.type
-class CreateRentalOutput:
-    rental: RentalType
-    items: List[RentalItemTypeOutput]
+    items: list[RentalItemType]
