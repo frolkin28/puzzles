@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.utils import timezone
 from enum import IntEnum
@@ -59,15 +60,23 @@ class Rental(models.Model):
     def is_returned(self) -> bool:
         return self.status == RentalStatus.RETURNED
 
-    def mark_as_active(self) -> None:
-        self.status = RentalStatus.ACTIVE
-        self.rented_at = timezone.now()
-        self.save()
-
-    def mark_as_returned(self) -> None:
+    def mark_as_returned(self, verification_photo_url: str) -> None:
+        if self.status != RentalStatus.ACTIVE:
+            raise PermissionDenied(
+                "Only rentals with status ACTIVE can be cancelled."
+            )
+        self.verification_photo_url = verification_photo_url
         self.status = RentalStatus.RETURNED
         self.returned = True
         self.returned_at = timezone.now()
+        self.save()
+
+    def mark_as_cancelled(self) -> None:
+        if self.status != RentalStatus.RESERVED:
+            raise PermissionDenied(
+                "Only rentals with status RESERVED can be cancelled."
+            )
+        self.status = RentalStatus.CANCELLED
         self.save()
 
     def __str__(self) -> str:

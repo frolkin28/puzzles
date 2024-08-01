@@ -1,30 +1,32 @@
 import strawberry
 from datetime import datetime, timedelta
-from django.db import transaction
 
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from strawberry import Info
+
+from puzzles.account.lib import login_required
 from puzzles.catalog.models.puzzle import Puzzle
 from puzzles.rental.graph.types import (
     RentalType, GraphQLEnumDeliveryType, RentalItemType
 )
-from puzzles.rental.models.rental import Rental, DeliveryType
+from puzzles.rental.models.rental import Rental, DeliveryType, RentalStatus
 from puzzles.rental.models.rental_item import RentalItem
 
 
 @strawberry.type
 class RentalMutation:
     @strawberry.mutation
+    @login_required
     def create_rental(
         self,
         delivery_type: GraphQLEnumDeliveryType,
         address: str,
         puzzle_ids: list[int],
-        info
+        info: Info,
     ) -> RentalType:
         with transaction.atomic():
-
             user = info.context.request.user
-            if not user.is_authenticated:
-                raise Exception("User not authenticated")
 
             rented_due_date = datetime.now().date() + timedelta(days=30)
             delivery_type = DeliveryType(delivery_type.value)
@@ -82,3 +84,35 @@ class RentalMutation:
             address=rental.address,
             items=rental_items_output
         )
+
+    @strawberry.mutation
+    @login_required
+    def cancel_rental(
+        self,
+        rental_id: int,
+        info: Info,
+    ) -> bool:
+        user = info.context.request.user
+        rental = Rental.objects.filter(id=rental_id, user=user).first()
+
+        if rental:
+            rental.mark_as_cancelled()
+            return True
+        return False
+
+    def return_rental(
+        self,
+        rental_id: int,
+        verification_photo_url: str,
+        info: Info,
+    ) -> bool:
+        user = info.context.request.user
+        rental = Rental.objects.filter(id=rental_id, user=user).first()
+
+        if rental:
+            rental.mark_as_returned(verification_photo_url)
+            return True
+        else:
+            raise PermissionDenied(
+                "You do not have permission to return this rental."
+            )

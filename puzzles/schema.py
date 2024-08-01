@@ -16,7 +16,7 @@ class Query:
 
 @strawberry.type
 class Mutation:
-    catalog: RentalMutation = strawberry.field(resolver=lambda: RentalMutation())
+    rental: RentalMutation = strawberry.field(resolver=lambda: RentalMutation())
 
 
 schema = strawberry.Schema(
