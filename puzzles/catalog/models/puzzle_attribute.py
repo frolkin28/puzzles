@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class PuzzleAttribute(models.Model):
     puzzle = models.ForeignKey('Puzzle', on_delete=models.CASCADE)
     attribute = models.ForeignKey('Attribute', on_delete=models.CASCADE)

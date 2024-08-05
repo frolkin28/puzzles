@@ -1,7 +1,9 @@
+from functools import wraps
 from typing import Any
 
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.db.utils import IntegrityError
 
@@ -52,3 +54,18 @@ def register_user(payload: RegisterModel) -> User:
     except IntegrityError as e:
         raise UserAlreadyExists from e
     return user
+
+
+def login_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        info = kwargs.get('info')
+        if info is None:
+            raise PermissionDenied("Missing context information.")
+
+        user = info.context.request.user
+        if not user.is_authenticated:
+            raise PermissionDenied("You must be logged in to perform this action.")
+
+        return func(*args, **kwargs)
+    return wrapper
