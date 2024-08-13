@@ -3,6 +3,7 @@ from enum import Enum
 
 from puzzles.catalog.models.attribute import Attribute
 from puzzles.catalog.models.puzzle import Puzzle, PuzzleCondition
+from puzzles.review.graph.types import ReviewType
 
 
 @strawberry.enum
@@ -39,6 +40,9 @@ class PuzzleType:
     attributes: list['AttributeType'] = strawberry.field(
         description="Attributes associated with the puzzle."
     )
+    reviews: list[ReviewType] = strawberry.field(
+        description="Reviews for the puzzle"
+    )
 
     @staticmethod
     def from_model(model: Puzzle) -> "PuzzleType":
@@ -53,7 +57,13 @@ class PuzzleType:
             price=model.price,
             deposit=model.deposit,
             condition=model.condition,
-            attributes=[AttributeType.from_model(attr) for attr in model.attributes.all()]
+            attributes=[
+                AttributeType.from_model(attr)
+                for attr in model.attributes.all()
+            ],
+            reviews=[
+                ReviewType.from_model(review)
+                for review in model.reviews.all()]
         )
 
 

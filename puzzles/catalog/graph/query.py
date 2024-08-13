@@ -1,6 +1,7 @@
 import strawberry
 from typing import Optional
 from django.contrib.postgres.search import SearchQuery, SearchRank
+from django.core.exceptions import ObjectDoesNotExist
 
 from puzzles.catalog.models.puzzle import PuzzleStatus
 from puzzles.catalog.models.puzzle import Puzzle
@@ -47,17 +48,13 @@ class CatalogQuery:
             puzzles = puzzles.order_by(order_by)
 
         return [
-            PuzzleType(
-                id=puzzle.id,
-                title=puzzle.title,
-                description=puzzle.description,
-                pieces=puzzle.pieces,
-                status=puzzle.status,
-                image_urls=puzzle.image_urls,
-                created_at=puzzle.created_at.isoformat(),
-                price=puzzle.price,
-                deposit=puzzle.deposit,
-                condition=puzzle.condition,
-                attributes=[attr.name for attr in puzzle.attributes.all()]
-            ) for puzzle in puzzles
+            PuzzleType.from_model(puzzle) for puzzle in puzzles
         ]
+
+    @strawberry.field(description="Get puzzle by ID")
+    def puzzle_by_id(self, pizzle_id: int) -> Optional[PuzzleType]:
+        try:
+            puzzle = Puzzle.objects.get(id=pizzle_id)
+            return PuzzleType.from_model(puzzle)
+        except Puzzle.DoesNotExist:
+            raise ObjectDoesNotExist("Not found puzzle")
