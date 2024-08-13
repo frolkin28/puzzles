@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from strawberry import Info
 
 from puzzles.account.lib import login_required
 from puzzles.catalog.models.puzzle import Puzzle
@@ -23,7 +22,7 @@ class RentalMutation:
         delivery_type: GraphQLEnumDeliveryType,
         address: str,
         puzzle_ids: list[int],
-        info: Info,
+        info: strawberry.Info,
     ) -> RentalType:
         with transaction.atomic():
             user = info.context.request.user
@@ -90,7 +89,7 @@ class RentalMutation:
     def cancel_rental(
         self,
         rental_id: int,
-        info: Info,
+        info: strawberry.Info,
     ) -> bool:
         user = info.context.request.user
         rental = Rental.objects.filter(id=rental_id, user=user).first()
@@ -104,7 +103,7 @@ class RentalMutation:
         self,
         rental_id: int,
         verification_photo_url: str,
-        info: Info,
+        info: strawberry.Info,
     ) -> bool:
         user = info.context.request.user
         rental = Rental.objects.filter(id=rental_id, user=user).first()
