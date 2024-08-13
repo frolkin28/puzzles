@@ -4,6 +4,7 @@ from django.utils import timezone
 from enum import IntEnum
 
 from puzzles.account.models.user import User
+from puzzles.cart.models import Cart
 
 
 class DeliveryType(IntEnum):
@@ -29,20 +30,15 @@ class RentalStatus(IntEnum):
 
 
 class Rental(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='rentals'
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rentals")
+    cart = models.OneToOneField(
+        Cart, on_delete=models.SET_NULL, related_name="rental", null=True, blank=True
     )
     status = models.IntegerField(
-        choices=RentalStatus.choices(),
-        default=RentalStatus.RESERVED.value
+        choices=RentalStatus.choices(), default=RentalStatus.RESERVED.value
     )
-    total_price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00
-    )
-    total_deposit = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00
-    )
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_deposit = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     rented_at = models.DateTimeField(auto_now_add=True)
     rented_due_date = models.DateField()
     returned_at = models.DateTimeField(blank=True, null=True)
@@ -80,5 +76,4 @@ class Rental(models.Model):
         self.save()
 
     def __str__(self) -> str:
-        return f'{self.user.username} - {self.puzzle.title}'
-
+        return f"{self.user.username} - {self.puzzle.title}"

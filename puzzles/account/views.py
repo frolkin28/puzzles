@@ -8,7 +8,7 @@ from puzzles.account.exc import UserAlreadyExists
 from pydantic import ValidationError
 
 from puzzles.utils.api import parse_json
-from puzzles.account.lib import register_user, EmailBackend
+from puzzles.account.lib import register_user
 from puzzles.account.schemas import RegisterModel, LoginModel
 
 
@@ -31,7 +31,9 @@ def register_view(request: HttpRequest) -> JsonResponse:
             {"errors": {"email": "This email is already in use"}}, status=400
         )
 
-    login(request=request, user=craeted_user, backend=EmailBackend)
+    login(
+        request=request, user=craeted_user, backend="puzzles.account.lib.EmailBackend"
+    )
 
     return JsonResponse({"success": True}, status=200)
 
@@ -53,7 +55,7 @@ def login_view(request: HttpRequest) -> JsonResponse:
     if user is None:
         return JsonResponse({}, status=401)
 
-    login(request=request, user=user, backend=EmailBackend)
+    login(request=request, user=user, backend="puzzles.account.lib.EmailBackend")
 
     return JsonResponse({"success": True}, status=200)
 
