@@ -4,7 +4,7 @@ from typing import Iterable
 
 from django.http import HttpRequest
 from django.db.models import Q
-
+from django.db.models.expressions import F
 from puzzles.cart.models import Cart, CartItem
 from puzzles.catalog.models.puzzle import Puzzle, PuzzleStatus
 from puzzles.cart.schemas import CartSchema, CartItemSchema
@@ -40,7 +40,17 @@ def get_cart_totals(cart_items: list[CartItem]) -> tuple[Decimal, Decimal]:
         amounts: tuple[float, float], cart_item: CartItem
     ) -> tuple[float, float]:
         price, deposite = amounts
-        return price + cart_item.item.price, deposite + cart_item.item.deposit
+
+        current_price = (
+            cart_item.price if cart_item.price is not None else cart_item.item.price
+        )
+        current_deposite = (
+            cart_item.deposit
+            if cart_item.deposit is not None
+            else cart_item.item.deposit
+        )
+
+        return price + current_price, deposite + current_deposite
 
     total_price, total_deposite = reduce(
         reducer,
@@ -93,8 +103,16 @@ def pack_cart(cart_id: int, cart_items: Iterable[CartItem]) -> CartSchema:
                 puzzle_id=cart_item.item.id,
                 title=cart_item.item.title,
                 image_url=next(iter(cart_item.item.image_urls), None),
-                price=stringify_price(cart_item.item.price),
-                deposit=stringify_price(cart_item.item.deposit),
+                price=stringify_price(
+                    cart_item.price
+                    if cart_item.price is not None
+                    else cart_item.item.price
+                ),
+                deposit=stringify_price(
+                    cart_item.deposit
+                    if cart_item.deposit is not None
+                    else cart_item.item.deposit
+                ),
             )
             for cart_item in cart_items
         ),
@@ -104,11 +122,10 @@ def pack_cart(cart_id: int, cart_items: Iterable[CartItem]) -> CartSchema:
 
 
 def check_ownership(cart: Cart, user_id: int | None, session_id: str | None) -> bool:
-    if user_id is not None:
-        return cart.user_id == user_id
-    elif session_id:
-        return cart.session_id == session_id
-    return False
+    return not (
+        (not cart.user_id and cart.session_id != session_id)
+        or (cart.user_id and cart.user_id != user_id)
+    )
 
 
 async def add_item_to_cart(
@@ -172,3 +189,30 @@ async def get_shopping_cart(
     cart_items = await get_cart_items(cart.id)
 
     return pack_cart(cart.id, cart_items)
+
+
+async def get_cart_by_id(cart_id: int) -> Cart | None:
+    try:
+        cart = await Cart.objects.aget(pk=cart_id)
+    except Cart.DoesNotExist:
+        return None
+    return cart
+
+
+async def bind_cart_to_user(user_id: int, session_id: str):
+    if not session_id:
+        return
+
+    cart = await get_cart(user_id=None, session_id=session_id)
+    if not cart:
+        return
+
+    cart.user_id = user_id
+    cart.session_id = None
+    await cart.asave()
+
+
+def persist_items_prices(cart_items: Iterable[CartItem]):
+    CartItem.objects.filter(id__in=[item.id for item in cart_items]).update(
+        price=F("item__price"), deposit=F("item__deposite")
+    )

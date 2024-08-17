@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from puzzles.utils.api import parse_json
 from puzzles.account.lib import register_user
 from puzzles.account.schemas import RegisterModel, LoginModel
+from puzzles.cart.lib import bind_cart_to_user
 
 
 @csrf_exempt
@@ -40,7 +41,7 @@ def register_view(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def login_view(request: HttpRequest) -> JsonResponse:
+async def login_view(request: HttpRequest) -> JsonResponse:
     request_json = parse_json(request)
     if request_json is None:
         return JsonResponse({"errors": {"message": "Invalid JSON"}}, status=400)
@@ -56,6 +57,7 @@ def login_view(request: HttpRequest) -> JsonResponse:
         return JsonResponse({}, status=401)
 
     login(request=request, user=user, backend="puzzles.account.lib.EmailBackend")
+    await bind_cart_to_user(user.id, request.session.session_key)
 
     return JsonResponse({"success": True}, status=200)
 

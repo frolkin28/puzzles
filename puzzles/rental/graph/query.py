@@ -1,13 +1,20 @@
+from puzzles.account.lib import login_required
 import strawberry
 
-from puzzles.rental.graph.types import RentalType, GraphQLEnumDeliveryType, \
-    RentalItemType
-from puzzles.rental.models import Rental, RentalItem
+from puzzles.rental.graph.types import (
+    RentalType,
+    GraphQLEnumDeliveryType,
+)
+from puzzles.rental.models import Rental
+from puzzles.cart.models import Cart
+from puzzles.cart.lib import pack_cart
+from puzzles.cart.graph.mapper import graphql_cart_mapper
 
 
 @strawberry.type
 class RentalQuery:
     @strawberry.field(description="Get rentals with optional filters")
+    @login_required
     def rentals(
         self,
         info,
@@ -22,17 +29,15 @@ class RentalQuery:
         else:
             rentals = Rental.objects.all()
 
-        rental_items = RentalItem.objects.filter(rental__in=rentals)
-        rental_items_by_rental = {rental.id: [] for rental in rentals}
-        for item in rental_items:
-            rental_items_by_rental[item.rental.id].append(RentalItemType(
-                id=item.id,
-                rental_id=item.rental.id,
-                puzzle_id=item.puzzle.id,
-                price=item.price,
-                deposit=item.deposit,
-                verification_photo=item.verification_photo
-            ))
+        carts_query = Cart.objects.prefetch_related(
+            "cart_items", "cart_items__item"
+        ).filter(id__in=[rental.cart_id for rental in rentals])
+        carts_map = {cart.id: cart for cart in carts_query}
+
+        def get_graphql_cart(cart_id: int):
+            if cart := carts_map.get(cart_id):
+                return graphql_cart_mapper(pack_cart(cart))
+            return None
 
         return [
             RentalType(
@@ -43,13 +48,11 @@ class RentalQuery:
                 rented_at=rental.rented_at.isoformat(),
                 rented_due_date=rental.rented_due_date.isoformat(),
                 returned_at=(
-                    rental.returned_at.isoformat()
-                    if rental.returned_at
-                    else None
+                    rental.returned_at.isoformat() if rental.returned_at else None
                 ),
                 delivery_type=GraphQLEnumDeliveryType(rental.delivery_type),
                 address=rental.address,
-                items=rental_items_by_rental[rental.id]
+                cart=get_graphql_cart(rental.cart_id),
             )
             for rental in rentals
         ]

@@ -9,6 +9,7 @@ class CartItem:
     imageUrl: str | None
     price: str
     deposit: str
+    verificationPhoto: str | None = None
 
 
 @strawberry.type

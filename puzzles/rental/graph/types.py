@@ -1,7 +1,7 @@
 import strawberry
 from enum import Enum
-from typing import List
 
+from puzzles.cart.graph.types import Cart
 from puzzles.rental.models.rental import DeliveryType
 
 
@@ -11,16 +11,6 @@ class GraphQLEnumDeliveryType(Enum):
     UP = DeliveryType.UP.value
     PICKUP = DeliveryType.PICKUP.value
     COURIER = DeliveryType.COURIER.value
-
-
-@strawberry.type
-class RentalItemType:
-    id: int
-    rental_id: int
-    puzzle_id: int
-    price: float
-    deposit: float
-    verification_photo: str
 
 
 @strawberry.type
@@ -34,4 +24,4 @@ class RentalType:
     returned_at: str | None
     delivery_type: GraphQLEnumDeliveryType
     address: str
-    items: list[RentalItemType]
+    cart: Cart
