@@ -1,12 +1,13 @@
+from asgiref.sync import async_to_sync
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.http import HttpRequest
 from django.contrib.auth import login, authenticate, logout
 from django.views.decorators.csrf import csrf_exempt
 
-from puzzles.account.exc import UserAlreadyExists
 from pydantic import ValidationError
 
+from puzzles.account.exc import UserAlreadyExists
 from puzzles.utils.api import parse_json
 from puzzles.account.lib import register_user
 from puzzles.account.schemas import RegisterModel, LoginModel
@@ -41,7 +42,7 @@ def register_view(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 @require_http_methods(["POST"])
-async def login_view(request: HttpRequest) -> JsonResponse:
+def login_view(request: HttpRequest) -> JsonResponse:
     request_json = parse_json(request)
     if request_json is None:
         return JsonResponse({"errors": {"message": "Invalid JSON"}}, status=400)
@@ -57,7 +58,7 @@ async def login_view(request: HttpRequest) -> JsonResponse:
         return JsonResponse({}, status=401)
 
     login(request=request, user=user, backend="puzzles.account.lib.EmailBackend")
-    await bind_cart_to_user(user.id, request.session.session_key)
+    async_to_sync(bind_cart_to_user)(user.id, request.session.session_key)
 
     return JsonResponse({"success": True}, status=200)
 

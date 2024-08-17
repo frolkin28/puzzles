@@ -1,8 +1,7 @@
-import strawberry
 from datetime import datetime, timedelta
 
+import strawberry
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
 
 from puzzles.account.lib import login_required
 from puzzles.rental.graph.types import RentalType, GraphQLEnumDeliveryType
@@ -15,6 +14,7 @@ from puzzles.cart.lib import (
     pack_cart,
 )
 from puzzles.cart.graph.mapper import graphql_cart_mapper
+from puzzles.services.db import AsyncAtomicContextManager
 
 
 @strawberry.type
@@ -28,8 +28,8 @@ class RentalMutation:
         cart_id: int,
         info: strawberry.Info,
     ) -> RentalType:
-        with transaction.atomic():
-            user = info.context.request.user
+        async with AsyncAtomicContextManager():
+            user = await info.context.request.auser()
 
             cart = await get_cart_by_id(cart_id)
             if not cart or not check_ownership(
@@ -46,17 +46,16 @@ class RentalMutation:
             rented_due_date = datetime.now().date() + timedelta(days=30)
             delivery_type = DeliveryType(delivery_type.value)
 
-            persist_items_prices(cart_items)
+            await persist_items_prices(cart_items)
 
-            rental = Rental.objects.create(
+            rental = Rental(
                 cart_id=cart.id,
                 user=user,
                 rented_due_date=rented_due_date,
                 delivery_type=delivery_type,
                 address=address,
             )
-
-            rental.save()
+            await rental.asave()
 
         return RentalType(
             id=rental.id,

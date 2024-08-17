@@ -212,7 +212,9 @@ async def bind_cart_to_user(user_id: int, session_id: str):
     await cart.asave()
 
 
-def persist_items_prices(cart_items: Iterable[CartItem]):
-    CartItem.objects.filter(id__in=[item.id for item in cart_items]).update(
-        price=F("item__price"), deposit=F("item__deposite")
-    )
+async def persist_items_prices(cart_items: Iterable[CartItem]):
+    for item in cart_items:
+        item.price = item.item.price
+        item.deposit = item.item.deposit
+
+    await CartItem.objects.abulk_update(cart_items, ["price", "deposit"])
