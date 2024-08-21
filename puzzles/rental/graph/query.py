@@ -5,7 +5,7 @@ from puzzles.rental.graph.types import (
     GraphQLEnumDeliveryType,
 )
 from puzzles.rental.models import Rental
-from puzzles.cart.models import Cart, CartItem
+from puzzles.cart.models import CartItem
 from puzzles.cart.lib import pack_cart
 from puzzles.cart.graph.mapper import graphql_cart_mapper
 from puzzles.utils.db import iterate_queryset
