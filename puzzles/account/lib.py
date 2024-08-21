@@ -1,6 +1,7 @@
 from functools import wraps
 from typing import Any
 
+from asgiref.sync import iscoroutinefunction
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
@@ -57,15 +58,32 @@ def register_user(payload: RegisterModel) -> User:
 
 
 def login_required(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        info = kwargs.get('info')
-        if info is None:
-            raise PermissionDenied("Missing context information.")
+    if iscoroutinefunction(func):
 
-        user = info.context.request.user
-        if not user.is_authenticated:
-            raise PermissionDenied("You must be logged in to perform this action.")
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            info = kwargs.get("info")
+            if info is None:
+                raise PermissionDenied("Missing context information.")
 
-        return func(*args, **kwargs)
+            user = await info.context.request.auser()
+            if not user.is_authenticated:
+                raise PermissionDenied("You must be logged in to perform this action.")
+
+            return await func(*args, **kwargs)
+
+    else:
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            info = kwargs.get("info")
+            if info is None:
+                raise PermissionDenied("Missing context information.")
+
+            user = info.context.request.user
+            if not user.is_authenticated:
+                raise PermissionDenied("You must be logged in to perform this action.")
+
+            return func(*args, **kwargs)
+
     return wrapper

@@ -1,38 +1,52 @@
 import strawberry
 
-from puzzles.rental.graph.types import RentalType, GraphQLEnumDeliveryType, \
-    RentalItemType
-from puzzles.rental.models import Rental, RentalItem
+from puzzles.rental.graph.types import (
+    RentalType,
+    GraphQLEnumDeliveryType,
+)
+from puzzles.rental.models import Rental
+from puzzles.cart.models import CartItem
+from puzzles.cart.lib import pack_cart
+from puzzles.cart.graph.mapper import graphql_cart_mapper
+from puzzles.utils.db import iterate_queryset
+
+
+def make_cart_items_map(cart_items: list[CartItem]) -> dict[int, list[CartItem]]:
+    items_mapping = {}
+    for cart_item in cart_items:
+        items_mapping.setdefault(cart_item.cart_id, []).append(cart_item)
+
+    return items_mapping
 
 
 @strawberry.type
 class RentalQuery:
     @strawberry.field(description="Get rentals with optional filters")
-    def rentals(
+    async def rentals(
         self,
         info,
         is_for_user: bool = False,
     ) -> list[RentalType]:
-        user = info.context.request.user
+        user = await info.context.request.auser()
 
         if is_for_user:
             if not user.is_authenticated:
                 raise Exception("User not authenticated")
-            rentals = Rental.objects.filter(user=user)
+            rentals = await iterate_queryset(Rental.objects.filter(user=user))
         else:
-            rentals = Rental.objects.all()
+            rentals = await iterate_queryset(Rental.objects.all())
 
-        rental_items = RentalItem.objects.filter(rental__in=rentals)
-        rental_items_by_rental = {rental.id: [] for rental in rentals}
-        for item in rental_items:
-            rental_items_by_rental[item.rental.id].append(RentalItemType(
-                id=item.id,
-                rental_id=item.rental.id,
-                puzzle_id=item.puzzle.id,
-                price=item.price,
-                deposit=item.deposit,
-                verification_photo=item.verification_photo
-            ))
+        cart_ids = [rental.cart_id for rental in rentals]
+
+        stored_cart_items = await iterate_queryset(
+            CartItem.objects.filter(cart_id__in=cart_ids).select_related("item")
+        )
+        cart_items_map = make_cart_items_map(stored_cart_items)
+
+        def get_graphql_cart(cart_id: int):
+            if cart_items := cart_items_map.get(cart_id):
+                return graphql_cart_mapper(pack_cart(cart_id, cart_items))
+            return None
 
         return [
             RentalType(
@@ -43,13 +57,11 @@ class RentalQuery:
                 rented_at=rental.rented_at.isoformat(),
                 rented_due_date=rental.rented_due_date.isoformat(),
                 returned_at=(
-                    rental.returned_at.isoformat()
-                    if rental.returned_at
-                    else None
+                    rental.returned_at.isoformat() if rental.returned_at else None
                 ),
                 delivery_type=GraphQLEnumDeliveryType(rental.delivery_type),
                 address=rental.address,
-                items=rental_items_by_rental[rental.id]
+                cart=get_graphql_cart(rental.cart_id),
             )
             for rental in rentals
         ]

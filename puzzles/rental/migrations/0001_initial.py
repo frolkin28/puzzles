@@ -9,35 +9,100 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('account', '__first__'),
-        ('catalog', '0002_puzzle_catalog_puz_search__0a5818_gin'),
+        ("account", "__first__"),
+        ("catalog", "0002_puzzle_catalog_puz_search__0a5818_gin"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Rental',
+            name="Rental",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.IntegerField(choices=[(1, 'Reserved'), (2, 'Active'), (3, 'Returned'), (4, 'Cancelled')], default=1)),
-                ('total_price', models.DecimalField(decimal_places=2, default=0.0, max_digits=10)),
-                ('total_deposit', models.DecimalField(decimal_places=2, default=0.0, max_digits=10)),
-                ('rented_at', models.DateTimeField(auto_now_add=True)),
-                ('rented_due_date', models.DateField()),
-                ('returned_at', models.DateTimeField(blank=True, null=True)),
-                ('delivery_type', models.IntegerField(choices=[(1, 'Np'), (2, 'Up'), (3, 'Pickup'), (4, 'Courier')])),
-                ('address', models.TextField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rentals', to='account.user')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.IntegerField(
+                        choices=[
+                            (1, "Reserved"),
+                            (2, "Active"),
+                            (3, "Returned"),
+                            (4, "Cancelled"),
+                        ],
+                        default=1,
+                    ),
+                ),
+                (
+                    "total_price",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
+                ),
+                (
+                    "total_deposit",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
+                ),
+                ("rented_at", models.DateTimeField(auto_now_add=True)),
+                ("rented_due_date", models.DateField()),
+                ("returned_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "delivery_type",
+                    models.IntegerField(
+                        choices=[(1, "Np"), (2, "Up"), (3, "Pickup"), (4, "Courier")]
+                    ),
+                ),
+                ("address", models.TextField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rentals",
+                        to="account.user",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='RentalItem',
+            name="RentalItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('price', models.DecimalField(decimal_places=2, default=0.0, max_digits=10)),
-                ('deposit', models.DecimalField(decimal_places=2, default=0.0, max_digits=10)),
-                ('verification_photo', models.URLField(max_length=1024)),
-                ('puzzle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rental_items', to='catalog.puzzle')),
-                ('rental', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rental_items', to='rental.rental')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "price",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
+                ),
+                (
+                    "deposit",
+                    models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
+                ),
+                ("verification_photo", models.URLField(max_length=1024)),
+                (
+                    "puzzle",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rental_items",
+                        to="catalog.puzzle",
+                    ),
+                ),
+                (
+                    "rental",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rental_items",
+                        to="rental.rental",
+                    ),
+                ),
             ],
         ),
     ]

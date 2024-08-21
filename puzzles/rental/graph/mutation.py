@@ -1,71 +1,61 @@
-import strawberry
 from datetime import datetime, timedelta
 
+import strawberry
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
 
 from puzzles.account.lib import login_required
-from puzzles.catalog.models.puzzle import Puzzle
-from puzzles.rental.graph.types import (
-    RentalType, GraphQLEnumDeliveryType, RentalItemType
+from puzzles.rental.graph.types import RentalType, GraphQLEnumDeliveryType
+from puzzles.rental.models.rental import Rental, DeliveryType
+from puzzles.cart.lib import (
+    get_cart_by_id,
+    check_ownership,
+    get_cart_items,
+    persist_items_prices,
+    pack_cart,
 )
-from puzzles.rental.models.rental import Rental, DeliveryType, RentalStatus
-from puzzles.rental.models.rental_item import RentalItem
+from puzzles.cart.graph.mapper import graphql_cart_mapper
+from puzzles.services.db import AsyncAtomicContextManager
 
 
 @strawberry.type
 class RentalMutation:
     @strawberry.mutation
     @login_required
-    def create_rental(
+    async def create_rental(
         self,
         delivery_type: GraphQLEnumDeliveryType,
         address: str,
-        puzzle_ids: list[int],
+        cart_id: int,
         info: strawberry.Info,
     ) -> RentalType:
-        with transaction.atomic():
-            user = info.context.request.user
+        async with AsyncAtomicContextManager():
+            user = await info.context.request.auser()
+
+            cart = await get_cart_by_id(cart_id)
+            if not cart or not check_ownership(
+                cart=cart,
+                user_id=user.id,
+                session_id=None,
+            ):
+                return None
+
+            cart_items = await get_cart_items(cart.id)
+            if not cart_items:
+                return
 
             rented_due_date = datetime.now().date() + timedelta(days=30)
             delivery_type = DeliveryType(delivery_type.value)
 
-            rental = Rental.objects.create(
+            await persist_items_prices(cart_items)
+
+            rental = Rental(
+                cart_id=cart.id,
                 user=user,
                 rented_due_date=rented_due_date,
                 delivery_type=delivery_type,
-                address=address
+                address=address,
             )
-
-            total_price = 0
-            total_deposit = 0
-
-            rental_items_output = []
-
-            for puzzle_id in puzzle_ids:
-                puzzle = Puzzle.objects.get(pk=puzzle_id)
-                rental_item = RentalItem.objects.create(
-                    rental=rental,
-                    puzzle=puzzle,
-                    price=puzzle.price,
-                    deposit=puzzle.deposit,
-                    verification_photo=""
-                )
-                total_price += puzzle.price
-                total_deposit += puzzle.deposit
-
-                rental_items_output.append(RentalItemType(
-                    id=rental_item.id,
-                    rental_id=rental_item.rental.id,
-                    puzzle_id=rental_item.puzzle.id,
-                    price=rental_item.price,
-                    deposit=rental_item.deposit,
-                    verification_photo=rental_item.verification_photo
-                ))
-
-            rental.total_price = total_price
-            rental.total_deposit = total_deposit
-            rental.save()
+            await rental.asave()
 
         return RentalType(
             id=rental.id,
@@ -75,13 +65,11 @@ class RentalMutation:
             rented_at=rental.rented_at.isoformat(),
             rented_due_date=rental.rented_due_date.isoformat(),
             returned_at=(
-                rental.returned_at.isoformat()
-                if rental.returned_at
-                else None
+                rental.returned_at.isoformat() if rental.returned_at else None
             ),
             delivery_type=delivery_type,
             address=rental.address,
-            items=rental_items_output
+            cart=graphql_cart_mapper(pack_cart(cart.id, cart_items)),
         )
 
     @strawberry.mutation
@@ -99,6 +87,8 @@ class RentalMutation:
             return True
         return False
 
+    @strawberry.mutation
+    @login_required
     def return_rental(
         self,
         rental_id: int,
@@ -112,6 +102,4 @@ class RentalMutation:
             rental.mark_as_returned(verification_photo_url)
             return True
         else:
-            raise PermissionDenied(
-                "You do not have permission to return this rental."
-            )
+            raise PermissionDenied("You do not have permission to return this rental.")

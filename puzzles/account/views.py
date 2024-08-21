@@ -1,15 +1,17 @@
+from asgiref.sync import async_to_sync
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.http import HttpRequest
 from django.contrib.auth import login, authenticate, logout
 from django.views.decorators.csrf import csrf_exempt
 
-from puzzles.account.exc import UserAlreadyExists
 from pydantic import ValidationError
 
+from puzzles.account.exc import UserAlreadyExists
 from puzzles.utils.api import parse_json
-from puzzles.account.lib import register_user, EmailBackend
+from puzzles.account.lib import register_user
 from puzzles.account.schemas import RegisterModel, LoginModel
+from puzzles.cart.lib import bind_cart_to_user
 
 
 @csrf_exempt
@@ -31,7 +33,9 @@ def register_view(request: HttpRequest) -> JsonResponse:
             {"errors": {"email": "This email is already in use"}}, status=400
         )
 
-    login(request=request, user=craeted_user, backend=EmailBackend)
+    login(
+        request=request, user=craeted_user, backend="puzzles.account.lib.EmailBackend"
+    )
 
     return JsonResponse({"success": True}, status=200)
 
@@ -53,7 +57,8 @@ def login_view(request: HttpRequest) -> JsonResponse:
     if user is None:
         return JsonResponse({}, status=401)
 
-    login(request=request, user=user, backend=EmailBackend)
+    login(request=request, user=user, backend="puzzles.account.lib.EmailBackend")
+    async_to_sync(bind_cart_to_user)(user.id, request.session.session_key)
 
     return JsonResponse({"success": True}, status=200)
 
