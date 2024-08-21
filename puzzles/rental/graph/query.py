@@ -1,21 +1,27 @@
-from puzzles.account.lib import login_required
 import strawberry
 
-from asgiref.sync import sync_to_async
 from puzzles.rental.graph.types import (
     RentalType,
     GraphQLEnumDeliveryType,
 )
 from puzzles.rental.models import Rental
-from puzzles.cart.models import Cart
+from puzzles.cart.models import Cart, CartItem
 from puzzles.cart.lib import pack_cart
 from puzzles.cart.graph.mapper import graphql_cart_mapper
+from puzzles.utils.db import iterate_queryset
+
+
+def make_cart_items_map(cart_items: list[CartItem]) -> dict[int, list[CartItem]]:
+    items_mapping = {}
+    for cart_item in cart_items:
+        items_mapping.setdefault(cart_item.cart_id, []).append(cart_item)
+
+    return items_mapping
 
 
 @strawberry.type
 class RentalQuery:
     @strawberry.field(description="Get rentals with optional filters")
-    @login_required
     async def rentals(
         self,
         info,
@@ -26,20 +32,20 @@ class RentalQuery:
         if is_for_user:
             if not user.is_authenticated:
                 raise Exception("User not authenticated")
-            rentals = await sync_to_async(Rental.objects.filter(user=user).all)()
+            rentals = await iterate_queryset(Rental.objects.filter(user=user))
         else:
-            rentals = await sync_to_async(Rental.objects.all)()
+            rentals = await iterate_queryset(Rental.objects.all())
 
-        carts_query = await sync_to_async(
-            Cart.objects.prefetch_related("cart_items", "cart_items__item").filter(
-                id__in=[rental.cart_id for rental in rentals]
-            )
-        )()
-        carts_map = {cart.id: cart for cart in carts_query}
+        cart_ids = [rental.cart_id for rental in rentals]
+
+        stored_cart_items = await iterate_queryset(
+            CartItem.objects.filter(cart_id__in=cart_ids).select_related("item")
+        )
+        cart_items_map = make_cart_items_map(stored_cart_items)
 
         def get_graphql_cart(cart_id: int):
-            if cart := carts_map.get(cart_id):
-                return graphql_cart_mapper(pack_cart(cart))
+            if cart_items := cart_items_map.get(cart_id):
+                return graphql_cart_mapper(pack_cart(cart_id, cart_items))
             return None
 
         return [

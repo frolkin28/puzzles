@@ -36,6 +36,7 @@ def get_user_filter_conditions(user_id: int | None, session_id: str | None) -> Q
 
 
 def get_cart_totals(cart_items: list[CartItem]) -> tuple[Decimal, Decimal]:
+    print(cart_items)
     def reducer(
         amounts: tuple[float, float], cart_item: CartItem
     ) -> tuple[float, float]:
