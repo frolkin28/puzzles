@@ -24,7 +24,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from puzzles.schema import schema
-from puzzles.account import views as account_views
+from puzzles.apps.account import views as account_views
 
 
 urlpatterns = [

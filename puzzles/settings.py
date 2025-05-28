@@ -29,6 +29,40 @@ DEBUG = True
 ALLOWED_HOSTS = ["0.0.0.0", "localhost", "127.0.0.1"]
 
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} — {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "[{levelname}]: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "puzzles": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
+
 # Application definition
 
 INSTALLED_APPS = (
@@ -39,11 +73,11 @@ INSTALLED_APPS = (
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
-    "puzzles.catalog",
-    "puzzles.account",
-    "puzzles.rental",
-    "puzzles.review",
-    "puzzles.cart",
+    "puzzles.apps.catalog",
+    "puzzles.apps.account",
+    "puzzles.apps.rental",
+    "puzzles.apps.review",
+    "puzzles.apps.cart",
 )
 
 MIDDLEWARE = (
@@ -110,8 +144,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = "account.User"
 
+EMAIL_BACKEND_PATH = "puzzles.common.auth.EmailBackend"
+
 AUTHENTICATION_BACKENDS = [
-    "puzzles.account.lib.EmailBackend",
+    EMAIL_BACKEND_PATH,
     "django.contrib.auth.backends.ModelBackend",
 ]
 
@@ -133,8 +169,8 @@ USE_TZ = True
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
