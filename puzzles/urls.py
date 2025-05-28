@@ -19,17 +19,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
-from strawberry.django.views import GraphQLView
+from strawberry.django.views import AsyncGraphQLView
 from django.conf import settings
 from django.conf.urls.static import static
 
 from puzzles.schema import schema
-from puzzles.account import views as account_views
+from puzzles.apps.account import views as account_views
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("graphql/", GraphQLView.as_view(schema=schema, graphiql=True)),
+    path("graphql/", AsyncGraphQLView.as_view(schema=schema, graphiql=True)),
     path("api/v1/register", account_views.register_view),
     path("api/v1/login", account_views.login_view),
     path("api/v1/logout", account_views.logout_view),
