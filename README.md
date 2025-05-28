@@ -1,3 +1,3 @@
 # puzzles
 
-[Docs](https://personal-177.gitbook.io/puzzles/zapusk)
+[Docs](https://personal-177.gitbook.io/puzzles)
